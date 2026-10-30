@@ -6,12 +6,13 @@
 ## 改动 1：节点 `host` 变更不触发配置推送（1 行）
 
 **现象**：改节点的 `host` 字段（trojan / hysteria 用它做 SNI；其它协议作为 `server_name` 兜底），
-节点不会立即收到推送，最长等 `pull_interval`（默认 60s）的 REST 轮询才生效。
+节点不会立即收到推送。节点在 **WS 连接期间会跳过 REST 轮询**（`service.go:220-227`），
+所以要等 WS 掉线/重连时那一次全量拉取才生效（可能是几小时/几天后）。
 
 **原因**：`app/Observers/ServerObserver.php` 的 `updated()` 只在
 `server_port / protocol_settings / type / route_ids / custom_outbounds / custom_routes / cert_config`
 变化时调用 `NodeSyncService::notifyConfigUpdated()`，**`host` 不在列表里**。
-（`V1/Server/UniProxyController::config()` 的 ETag 是对整个配置做 `sha1`，所以最终会被拉到——只是慢，不是永久不生效。）
+（`V1/Server/UniProxyController::config()` 的 ETag 是对整个配置做 `sha1`，所以只要真的拉一次就能生效——问题在于 WS 在线时根本不会拉。）
 
 **修复**：把 `host` 加进 `wasChanged([...])` 列表，改 host 立即推送，与 `server_port` 等字段行为一致。
 
