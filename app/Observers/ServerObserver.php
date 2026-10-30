@@ -22,6 +22,7 @@ class ServerObserver
             'server_port',
             'protocol_settings',
             'type',
+            'host',
             'route_ids',
             'custom_outbounds',
             'custom_routes',
