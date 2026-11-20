@@ -393,7 +393,9 @@ class ServerService
             }
         }
 
-        return $response;
+        // 插件钩子：允许插件在下发前改写节点配置
+        // （landing-outbound 插件用它把自定义出站里的 node_id 引用解析为完整出站）
+        return HookManager::filter('server.config.build', $response, $node);
     }
 
     /**
